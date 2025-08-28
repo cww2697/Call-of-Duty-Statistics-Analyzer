@@ -83,7 +83,12 @@ def read_game_data(file_path: str) -> Dict[str, Dict[str, float]]:
                 KD_LABEL: parse_kd_ratio(kills, deaths),
             }
 
-    sorted_game_data = dict(sorted(game_data.items(), key=lambda x: datetime.strptime(x[0], '%m/%d/%Y %H:%M')))
+    sorted_game_data = dict(
+        sorted(
+            game_data.items(),
+            key=lambda x: datetime.strptime(x[0], '%m/%d/%Y %H:%M')
+        )
+    )
     return sorted_game_data
 
 
@@ -218,10 +223,11 @@ def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> 
             table.set_fontsize(8)
             table.scale(1.2, 1.5)
             col_widths = [0.3, 0.15, 0.15, 0.15, 0.15]
-            for i, width in enumerate(col_widths):
-                for cell in table._cells:
-                    if cell[1] == i:
-                        table._cells[cell].set_width(width)
+            cells = table.get_celld()
+            for (row, col), cell in cells.items():
+                if col < len(col_widths):
+                    cell.set_width(col_widths[col])
+
             pdf.savefig(fig)
             plt.close()
 
@@ -311,12 +317,14 @@ def main():
 
     fig = generate_chart(game_indices, kd_series, skill_series, timestamps_sorted)
 
-    graph_pdf_name = f"{gamertag}_game_statistics_graph.pdf" if gamertag else "game_statistics_graph.pdf"
+    graph_pdf_name = f"{gamertag}_game_statistics_graph.pdf" if gamertag \
+        else "game_statistics_graph.pdf"
     graph_pdf_path = os.path.join(OUTPUT_DIR, graph_pdf_name)
     save_plot_pdf(fig, graph_pdf_path)
     print(f"Graph saved as {graph_pdf_path}")
 
-    table_pdf_name = f"{gamertag}_game_statistics_data.pdf" if gamertag else "game_statistics_data.pdf"
+    table_pdf_name = f"{gamertag}_game_statistics_data.pdf" if gamertag \
+        else "game_statistics_data.pdf"
     table_pdf_path = os.path.join(OUTPUT_DIR, table_pdf_name)
     save_table_pdf(game_data, table_pdf_path)
     print(f"Data saved as {table_pdf_path}")
