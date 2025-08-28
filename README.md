@@ -32,7 +32,7 @@ desired multiplayer statistics table from your Activision Data Request HTML file
 1. Activate the virtual environment (see above)
 2. Run the program:
    ```bash
-   python cod-stats.py
+   python cod_stats.py
    ```
 3. When prompted, enter the path to your CSV file containing game statistics
 

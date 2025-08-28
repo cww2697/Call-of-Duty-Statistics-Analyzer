@@ -1,3 +1,13 @@
+"""
+A script for processing and visualizing game statistics data including kills, deaths,
+skill, kill-death ratio, and timestamps. Outputs include statistical visualizations
+and tabular data saved to PDF files.
+
+This module provides functionality to parse game data from a CSV file, compute
+kill-death ratios, generate statistical annotations for plots, and save both visual
+plots and tabular data as multipage PDF documents.
+"""
+
 import os
 import csv
 from typing import Dict, List, Tuple
@@ -18,10 +28,42 @@ TABLE_HEADERS = ["Timestamp", "Skill", "Kills", "Deaths", "K/D Ratio"]
 
 
 def parse_kd_ratio(kills: int, deaths: int) -> float:
+    """
+    Calculates and returns the kill-death ratio based on the number of kills and
+    deaths provided.
+
+    The function computes the ratio of kills to deaths, ensuring to handle the edge
+    case where deaths are zero. If the number of deaths is zero, the function will
+    return the number of kills as a float.
+
+    :param kills: The number of kills (integer).
+    :param deaths: The number of deaths (integer). If zero, the ratio defaults
+        to the number of kills.
+
+    :return: The kill-death ratio as a float.
+    """
     return float(kills) if deaths == 0 else (kills / deaths)
 
 
 def read_game_data(file_path: str) -> Dict[str, Dict[str, float]]:
+    """
+    Reads game data from a CSV file and processes it into a dictionary format.
+
+    The function extracts specific fields, including kills, deaths, skill, and
+     calculates a K/D ratio, for each record, and organizes the data indexed by timestamp.
+
+    :param file_path: The path to the CSV file containing game data
+        including fields such as UTC Timestamp, Kills, Deaths, and Skill.
+    :type file_path: str
+
+    :return: A dictionary where each key is the UTC timestamp (as a string)
+        and the value is another dictionary containing:
+            - "Skill": The skill score as a float.
+            - "Kills": The number of kills as an integer.
+            - "Deaths": The number of deaths as an integer.
+            - KD_LABEL: The calculated KD ratio as a float.
+    :rtype: Dict[str, Dict[str, float]]
+    """
     game_data: Dict[str, Dict[str, float]] = {}
     with open(file_path, "r", encoding="utf-8") as file:
         csv_reader = csv.DictReader(file)
@@ -43,6 +85,24 @@ def read_game_data(file_path: str) -> Dict[str, Dict[str, float]]:
 
 
 def compute_series_stats(series: List[float]) -> Tuple[float, float, float, float, int, int]:
+    """
+    Computes various statistical metrics for a given series of floating point numbers.
+
+    This function calculates the minimum value, maximum value, average, span, index
+    of the minimum value, and index of the maximum value in the input series.
+
+    :param series: List of floating point numbers for which statistics are
+                   computed.
+    :return: A tuple containing the following:
+             - Minimum value of the series
+             - Maximum value of the series
+             - Average value of the series
+             - Span, which is the maximum of the absolute values of the
+               minimum and maximum, including a small epsilon to ensure
+               non-zero scaling
+             - Index of the minimum value
+             - Index of the maximum value
+    """
     smin = min(series)
     smax = max(series)
     avg = sum(series) / len(series)
@@ -53,6 +113,19 @@ def compute_series_stats(series: List[float]) -> Tuple[float, float, float, floa
 
 
 def annotate_series_stats(ax, indices: List[int], series: List[float], color: str, label_prefix: str) -> None:
+    """
+    Annotates a plot with statistical information about a given series, including its
+    minimum, maximum, and average values. The annotated values are marked and
+    labeled on the given `ax`.
+
+    :param ax: The matplotlib Axes object on which the annotations will be drawn.
+    :param indices: A list of indices corresponding to data points in the series.
+    :param series: A list of numerical values for which statistics are computed.
+    :param color: A string representing the color of the annotations and lines.
+    :param label_prefix: A string prefix used to label the annotations on the plot.
+
+    :return: None. This function modifies the provided Axes object directly.
+    """
     smin, smax, avg, span, min_idx, max_idx = compute_series_stats(series)
     ax.set_ylim(-span, span)
     ax.plot(indices[min_idx], smin, marker="o", color=color, linestyle="None", label=f"Min {label_prefix}: {smin:.2f}")
@@ -61,6 +134,17 @@ def annotate_series_stats(ax, indices: List[int], series: List[float], color: st
 
 
 def save_plot_pdf(fig, output_path: str) -> None:
+    """
+    Save a matplotlib figure as a PDF file in landscape orientation.
+
+    This function saves the provided matplotlib figure to the specified output
+    path in PDF format.
+
+    :param fig: The matplotlib figure to save.
+    :type fig: matplotlib.figure.Figure
+    :param output_path: The path where the PDF file will be saved.
+    :return: None
+    """
     with PdfPages(output_path) as pdf:
         fig.set_size_inches(11, 8.5)
         pdf.savefig(orientation="landscape")
@@ -68,6 +152,17 @@ def save_plot_pdf(fig, output_path: str) -> None:
 
 
 def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> None:
+    """
+    Save a table of game data as a multipage PDF file. The table includes data such as
+    timestamps, skill levels, kills, deaths, and kill-death ratios, with pagination for
+    large datasets.
+
+    :param game_data: A dictionary containing game data, where keys represent timestamps
+        (as strings) and values are nested dictionaries with statistics like skill levels
+        (float), kills, deaths, and kill-death ratios.
+    :param output_path: The file path where the resulting PDF document should be saved.
+    :return: None
+    """
     data_rows = list(sorted(game_data.keys()))
     total_pages = (len(data_rows) + ROWS_PER_PAGE - 1) // ROWS_PER_PAGE
     for page in range(total_pages):
@@ -105,6 +200,24 @@ def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> 
 
 
 def generate_chart(game_indices, kd_series, skill_series, timestamps_sorted):
+    """
+    Generates a chart visualizing game statistics over time, including kill-death (KD) ratios and
+    skill ratings. The chart contains dual y-axes to correlate these two metrics and provides
+    annotated statistics directly on the plot for better data interpretability.
+
+    :param game_indices: List of indices representing the sequential order of games.
+                        This forms the x-axis of the chart.
+    :type game_indices: list[int]
+    :param kd_series: A list of kill-death ratios corresponding to each game index.
+    :type kd_series: list[float]
+    :param skill_series: A list of skill ratings corresponding to each game index.
+    :type skill_series: list[float]
+    :param timestamps_sorted: Sequential list of timestamps corresponding to each game index,
+                              used to determine x-axis tick intervals.
+    :type timestamps_sorted: list[str]
+    :return: A Matplotlib `Figure` object representing the generated chart.
+    :rtype: matplotlib.figure.Figure
+    """
     fig, ax1 = plt.subplots(figsize=(12, 6))
     ax1.set_xlabel("Game Number")
     ax1.set_ylabel(KD_LABEL, color=KD_COLOR)
