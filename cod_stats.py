@@ -192,7 +192,7 @@ def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> 
     :return: None
     """
     data_rows = list(game_data.keys())
-    total_pages = (len(data_rows) + ROWS_PER_PAGE - 1)
+    total_pages = len(data_rows) + ROWS_PER_PAGE - 1
     with PdfPages(output_path) as pdf:
         for page in range(total_pages):
             fig, ax = plt.subplots(figsize=(8.5, 11))
