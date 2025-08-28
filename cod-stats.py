@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+
 OUTPUT_DIR = "output"
 GRAPH_PDF_NAME = "game_statistics_graph.pdf"
 TABLE_PDF_NAME = "game_statistics_data.pdf"
@@ -103,41 +104,22 @@ def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> 
         plt.close(fig)
 
 
-def main():
-    file_path = input("Enter file path: ").strip('"\'')
-    if not os.path.exists(file_path):
-        print(f"Error: File '{file_path}' does not exist.")
-        return
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    game_data = read_game_data(file_path)
-    if not game_data:
-        print("No valid data found in the CSV.")
-        return
-
-    timestamps_sorted = sorted(game_data.keys())
-    kd_series = [game_data[ts][KD_LABEL] for ts in timestamps_sorted]
-    skill_series = [game_data[ts][SKILL_LABEL] for ts in timestamps_sorted]
-    game_indices = list(range(1, len(timestamps_sorted) + 1))
-
+def generate_chart(game_indices, kd_series, skill_series, timestamps_sorted):
     fig, ax1 = plt.subplots(figsize=(12, 6))
     ax1.set_xlabel("Game Number")
     ax1.set_ylabel(KD_LABEL, color=KD_COLOR)
     ax1.plot(game_indices, kd_series, color=KD_COLOR, linestyle="-", label=KD_LABEL)
     ax1.tick_params(axis="y", labelcolor=KD_COLOR, length=4, width=1, direction="inout")
     ax1.spines["left"].set_position(("data", 0))
-
     ax2 = ax1.twinx()
     ax2.set_ylabel(SKILL_LABEL, color=SKILL_COLOR)
     ax2.plot(game_indices, skill_series, color=SKILL_COLOR, linestyle="-", label=SKILL_LABEL)
     ax2.tick_params(axis="y", labelcolor=SKILL_COLOR, length=4, width=1, direction="inout")
     ax2.spines["left"].set_position(("data", 0))
-
     if kd_series:
         annotate_series_stats(ax1, game_indices, kd_series, KD_COLOR, KD_LABEL)
     if skill_series:
         annotate_series_stats(ax2, game_indices, skill_series, SKILL_COLOR, SKILL_LABEL)
-
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(
@@ -157,6 +139,27 @@ def main():
     plt.xticks(xticks)
     plt.tick_params(axis="x", direction="inout")
     plt.tight_layout()
+    return fig
+
+
+def main():
+    file_path = input("Enter file path: ").strip('"\'')
+    if not os.path.exists(file_path):
+        print(f"Error: File '{file_path}' does not exist.")
+        return
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    game_data = read_game_data(file_path)
+    if not game_data:
+        print("No valid data found in the CSV.")
+        return
+
+    timestamps_sorted = sorted(game_data.keys())
+    kd_series = [game_data[ts][KD_LABEL] for ts in timestamps_sorted]
+    skill_series = [game_data[ts][SKILL_LABEL] for ts in timestamps_sorted]
+    game_indices = list(range(1, len(timestamps_sorted) + 1))
+
+    fig = generate_chart(game_indices, kd_series, skill_series, timestamps_sorted)
 
     graph_pdf_path = os.path.join(OUTPUT_DIR, GRAPH_PDF_NAME)
     save_plot_pdf(fig, graph_pdf_path)

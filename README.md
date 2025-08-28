@@ -1,7 +1,9 @@
 # Call of Duty Statistics Analyzer
 
-A Python application that analyzes Call of Duty performance data from CSV files and generates visual reports including
-Skill Rating, Kills per match, Deaths per match, and K/D ratio.
+Transform your Call of Duty gameplay data into insightful visual reports with this Python analyzer. This application
+processes performance statistics from CSV files to generate detailed graphs and tables showing your Skill Rating
+progression, Kills per Match, Deaths per Match, and K/D ratio trends over time. Import your stats by copying the
+desired multiplayer statistics table from your Activision Data Request HTML file into a CSV format.
 
 ## Installation
 
@@ -22,7 +24,7 @@ Skill Rating, Kills per match, Deaths per match, and K/D ratio.
       ```
 5. Install required packages:
    ```bash
-   pip install matplotlib numpy pillow
+   pip install matplotlib
    ```
 
 ## Usage
@@ -30,7 +32,7 @@ Skill Rating, Kills per match, Deaths per match, and K/D ratio.
 1. Activate the virtual environment (see above)
 2. Run the program:
    ```bash
-   python main.py
+   python cod-stats.py
    ```
 3. When prompted, enter the path to your CSV file containing game statistics
 
@@ -56,3 +58,5 @@ Features:
 - Statistical analysis (min, max, average)
 - Multi-page table support for large datasets
 - Professional-grade visualizations
+
+
