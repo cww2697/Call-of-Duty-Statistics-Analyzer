@@ -313,10 +313,19 @@ def main():
     :raises FileNotFoundError: If the specified file path does not exist.
     """
     gamertag = input("Enter your Call of Duty gamertag (press Enter for default): ")
-    file_path = input("Enter input file path: ").strip('"\'')
-    if not os.path.exists(file_path):
-        print(f"Error: File '{file_path}' does not exist.")
-        return
+    file_path = ""
+    valid_input = False
+    while not valid_input:
+        file_path = input("Enter input file path: ").strip('"\'')
+        if file_path == "":
+            print("No input file path provided. Please enter a valid file path.")
+            continue
+        if not os.path.exists(file_path):
+            print(f"File '{file_path}' does not exist.")
+            continue
+
+        valid_input = True
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     game_data = read_game_data(file_path)
