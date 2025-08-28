@@ -10,6 +10,7 @@ plots and tabular data as multipage PDF documents.
 
 import os
 import csv
+from datetime import datetime
 from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -81,7 +82,9 @@ def read_game_data(file_path: str) -> Dict[str, Dict[str, float]]:
                 "Deaths": deaths,
                 KD_LABEL: parse_kd_ratio(kills, deaths),
             }
-    return game_data
+
+    sorted_game_data = dict(sorted(game_data.items(), key=lambda x: datetime.strptime(x[0], '%m/%d/%Y %H:%M')))
+    return sorted_game_data
 
 
 def compute_series_stats(series: List[float]) -> Tuple[float, float, float, float, int, int]:
@@ -112,7 +115,13 @@ def compute_series_stats(series: List[float]) -> Tuple[float, float, float, floa
     return smin, smax, avg, span, min_idx, max_idx
 
 
-def annotate_series_stats(ax, indices: List[int], series: List[float], color: str, label_prefix: str) -> None:
+def annotate_series_stats(
+        ax,
+        indices: List[int],
+        series: List[float],
+        color: str,
+        label_prefix: str
+) -> None:
     """
     Annotates a plot with statistical information about a given series, including its
     minimum, maximum, and average values. The annotated values are marked and
@@ -128,8 +137,22 @@ def annotate_series_stats(ax, indices: List[int], series: List[float], color: st
     """
     smin, smax, avg, span, min_idx, max_idx = compute_series_stats(series)
     ax.set_ylim(-span, span)
-    ax.plot(indices[min_idx], smin, marker="o", color=color, linestyle="None", label=f"Min {label_prefix}: {smin:.2f}")
-    ax.plot(indices[max_idx], smax, marker="o", color=color, linestyle="None", label=f"Max {label_prefix}: {smax:.2f}")
+    ax.plot(
+        indices[min_idx],
+        smin,
+        marker="o",
+        color=color,
+        linestyle="None",
+        label=f"Min {label_prefix}: {smin:.2f}"
+    )
+    ax.plot(
+        indices[max_idx],
+        smax,
+        marker="o",
+        color=color,
+        linestyle="None",
+        label=f"Max {label_prefix}: {smax:.2f}"
+    )
     ax.axhline(y=avg, color=color, linestyle="--", label=f"Avg {label_prefix}: {avg:.2f}")
 
 
@@ -163,40 +186,44 @@ def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> 
     :param output_path: The file path where the resulting PDF document should be saved.
     :return: None
     """
-    data_rows = list(sorted(game_data.keys()))
+    data_rows = list(game_data.keys())
     total_pages = (len(data_rows) + ROWS_PER_PAGE - 1) // ROWS_PER_PAGE
-    for page in range(total_pages):
-        fig, ax = plt.subplots(figsize=(8.5, 11))
-        ax.axis("off")
-        plt.title(f"Game Data Table - Page {page + 1} of {total_pages}", pad=20)
-        start_idx = page * ROWS_PER_PAGE
-        end_idx = min((page + 1) * ROWS_PER_PAGE, len(data_rows))
-        current_rows = data_rows[start_idx:end_idx]
-        table_data: List[List[str]] = [TABLE_HEADERS]
-        for timestamp in current_rows:
-            data = game_data[timestamp]
-            row = [
-                timestamp,
-                f"{data['Skill']:.2f}",
-                str(data["Kills"]),
-                str(data["Deaths"]),
-                f"{data[KD_LABEL]:.2f}",
-            ]
-            table_data.append(row)
+    with PdfPages(output_path) as pdf:
+        for page in range(total_pages):
+            fig, ax = plt.subplots(figsize=(8.5, 11))
+            ax.axis("off")
+            plt.title(f"Game Data - Page {page + 1} of {total_pages}", pad=0)
+            start_idx = page * ROWS_PER_PAGE
+            end_idx = min((page + 1) * ROWS_PER_PAGE, len(data_rows))
+            current_rows = data_rows[start_idx:end_idx]
+            table_data: List[List[str]] = [TABLE_HEADERS]
+            for timestamp in current_rows:
+                data = game_data[timestamp]
+                row = [
+                    timestamp,
+                    f"{data['Skill']:.2f}",
+                    str(data["Kills"]),
+                    str(data["Deaths"]),
+                    f"{data[KD_LABEL]:.2f}",
+                ]
+                table_data.append(row)
 
-
-        table = ax.table(cellText=table_data, loc="center", cellLoc="center", bbox=[0.1, 0.1, 0.8, 0.8])
-        table.auto_set_font_size(False)
-        table.set_fontsize(8)
-        table.scale(1.2, 1.5)
-        col_widths = [0.3, 0.15, 0.15, 0.15, 0.15]
-        for i, width in enumerate(col_widths):
-            for cell in table._cells:
-                if cell[1] == i:
-                    table._cells[cell].set_width(width)
-        with PdfPages(output_path) as pdf:
+            table = ax.table(
+                cellText=table_data,
+                loc="center",
+                cellLoc="center",
+                bbox=[0.1, 0.1, 0.8, 0.8]
+            )
+            table.auto_set_font_size(False)
+            table.set_fontsize(8)
+            table.scale(1.2, 1.5)
+            col_widths = [0.3, 0.15, 0.15, 0.15, 0.15]
+            for i, width in enumerate(col_widths):
+                for cell in table._cells:
+                    if cell[1] == i:
+                        table._cells[cell].set_width(width)
             pdf.savefig(fig)
-        plt.close(fig)
+            plt.close()
 
 
 def generate_chart(game_indices, kd_series, skill_series, timestamps_sorted):
@@ -244,7 +271,7 @@ def generate_chart(game_indices, kd_series, skill_series, timestamps_sorted):
         framealpha=1.0,
         facecolor="white",
         edgecolor="black",
-        bbox_transform=ax1.transAxes,
+        bbox_transform=ax1.transAxes
     )
     plt.title("Game Statistics Over Time")
     plt.grid(True, axis="x")
@@ -256,7 +283,17 @@ def generate_chart(game_indices, kd_series, skill_series, timestamps_sorted):
 
 
 def main():
-    file_path = input("Enter file path: ").strip('"\'')
+    """
+    Processes a CSV file to extract game data, generate visualizations, and save them
+    as PDFs. The function validates the provided file path, analyzes the game data,
+    and produces a graphical plot and data table saved as separate PDF files.
+
+    :return: None
+
+    :raises FileNotFoundError: If the specified file path does not exist.
+    """
+    gamertag = input("Enter your Call of Duty gamertag (press Enter for default): ")
+    file_path = input("Enter input file path: ").strip('"\'')
     if not os.path.exists(file_path):
         print(f"Error: File '{file_path}' does not exist.")
         return
@@ -274,13 +311,15 @@ def main():
 
     fig = generate_chart(game_indices, kd_series, skill_series, timestamps_sorted)
 
-    graph_pdf_path = os.path.join(OUTPUT_DIR, GRAPH_PDF_NAME)
+    graph_pdf_name = f"{gamertag}_game_statistics_graph.pdf" if gamertag else "game_statistics_graph.pdf"
+    graph_pdf_path = os.path.join(OUTPUT_DIR, graph_pdf_name)
     save_plot_pdf(fig, graph_pdf_path)
+    print(f"Graph saved as {graph_pdf_path}")
 
-    table_pdf_path = os.path.join(OUTPUT_DIR, TABLE_PDF_NAME)
+    table_pdf_name = f"{gamertag}_game_statistics_data.pdf" if gamertag else "game_statistics_data.pdf"
+    table_pdf_path = os.path.join(OUTPUT_DIR, table_pdf_name)
     save_table_pdf(game_data, table_pdf_path)
-
-    print(f"PDF saved as {graph_pdf_path}")
+    print(f"Data saved as {table_pdf_path}")
 
 
 if __name__ == "__main__":
