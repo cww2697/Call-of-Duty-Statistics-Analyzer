@@ -192,7 +192,7 @@ def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> 
     :return: None
     """
     data_rows = list(game_data.keys())
-    total_pages = (len(data_rows) + ROWS_PER_PAGE - 1) // ROWS_PER_PAGE
+    total_pages = (len(data_rows) + ROWS_PER_PAGE - 1)
     with PdfPages(output_path) as pdf:
         for page in range(total_pages):
             fig, ax = plt.subplots(figsize=(8.5, 11))
@@ -203,14 +203,7 @@ def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> 
             current_rows = data_rows[start_idx:end_idx]
             table_data: List[List[str]] = [TABLE_HEADERS]
             for timestamp in current_rows:
-                data = game_data[timestamp]
-                row = [
-                    timestamp,
-                    f"{data['Skill']:.2f}",
-                    str(data["Kills"]),
-                    str(data["Deaths"]),
-                    f"{data[KD_LABEL]:.2f}",
-                ]
+                row = get_table_row_data(game_data, timestamp)
                 table_data.append(row)
 
             table = ax.table(
@@ -230,6 +223,27 @@ def save_table_pdf(game_data: Dict[str, Dict[str, float]], output_path: str) -> 
 
             pdf.savefig(fig)
             plt.close()
+
+
+def get_table_row_data(game_data, timestamp):
+    """
+    Extracts and formats specific game statistics into a tabular row format. The function
+    retrieves data for a given timestamp from the provided game data dictionary and formats
+    it into a row suitable for tabular representation.
+
+    :param game_data: Dictionary that holds game-related data, indexed by timestamps.
+    :param timestamp: Key representing the time at which the relevant game data is recorded.
+    :return: A list containing formatted tabular data for the given timestamp.
+    """
+    data = game_data[timestamp]
+    row = [
+        timestamp,
+        f"{data['Skill']:.2f}",
+        str(data["Kills"]),
+        str(data["Deaths"]),
+        f"{data[KD_LABEL]:.2f}",
+    ]
+    return row
 
 
 def generate_chart(game_indices, kd_series, skill_series, timestamps_sorted):
